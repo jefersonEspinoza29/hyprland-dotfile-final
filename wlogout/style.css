@@ -1,0 +1,82 @@
+@import "colors.css";
+
+/* sin sombras locas */
+* {
+  box-shadow: none;
+}
+
+/* Fondo semitransparente sobre todo */
+window {
+  background-color: alpha(@wlogout_bg, 0.75);
+}
+
+/* Contenedor principal */
+#wlogout {
+  font-family: "JetBrainsMono Nerd Font", "Noto Sans", "Cantarell", sans-serif;
+  color: @wlogout_fg;
+}
+
+/* Botones base: tarjetas minimalistas con icono + texto */
+button {
+  background-color: alpha(@wlogout_bg_dim, 0.96);
+  color: @wlogout_fg;
+  border-radius: 18px;
+  border: 1px solid @wlogout_border;
+
+  min-width: 130px;
+  min-height: 160px;
+  margin: 10px;
+  padding: 20px 18px 10px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  background-repeat: no-repeat;
+  background-position: center 28%;
+  background-size: 60px;
+}
+
+/* Hover con acento de la paleta */
+button:hover,
+button:focus {
+  background-color: @wlogout_accent_soft;
+  border-color: @wlogout_accent;
+  color: @wlogout_fg;
+  outline: none;
+}
+
+/* El texto se baja para que el icono tenga espacio */
+button label {
+  margin-top: 78px;
+}
+
+/* Iconos, igual que ya tenías */
+#lock {
+  background-image: image(url("/usr/share/wlogout/icons/lock.png"),
+                          url("/usr/local/share/wlogout/icons/lock.png"));
+}
+
+#logout {
+  background-image: image(url("/usr/share/wlogout/icons/logout.png"),
+                          url("/usr/local/share/wlogout/icons/logout.png"));
+}
+
+#suspend {
+  background-image: image(url("/usr/share/wlogout/icons/suspend.png"),
+                          url("/usr/local/share/wlogout/icons/suspend.png"));
+}
+
+#hibernate {
+  background-image: image(url("/usr/share/wlogout/icons/hibernate.png"),
+                          url("/usr/local/share/wlogout/icons/hibernate.png"));
+}
+
+#shutdown {
+  background-image: image(url("/usr/share/wlogout/icons/shutdown.png"),
+                          url("/usr/local/share/wlogout/icons/shutdown.png"));
+}
+
+#reboot {
+  background-image: image(url("/usr/share/wlogout/icons/reboot.png"),
+                          url("/usr/local/share/wlogout/icons/reboot.png"));
+}

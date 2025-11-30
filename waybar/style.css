@@ -1,0 +1,139 @@
+@import "colors.css";
+
+* {
+  font-family: "JetBrainsMono Nerd Font propo", "Noto Sans", "Cantarell";
+  font-size: 14px;
+  font-weight: 900;
+  
+}
+
+/* color de texto general basado en la paleta */
+window#waybar {
+  background: transparent;
+  color: @on_surface;
+}
+
+/* contenedor píldora global */
+#waybar > box {
+  background-color: @surface_container_high;
+  border-radius: 999px;
+  border: 1px solid @surface_variant;
+  padding: 4px 10px;
+}
+
+/* launcher icon left */
+#custom-launcher {
+  padding: 0 8px;
+  margin-left: 4px;
+  margin-right: 6px;
+}
+
+#custom-launcher:hover {
+  background: @surface_container_highest;
+  border-radius: 999px;
+}
+
+/* workspaces minimal pills */
+#workspaces {
+  margin-right: 8px;
+}
+
+#workspaces button {
+  border-radius: 999px;
+  padding: 1px 6px;
+  margin: 0 2px;
+  min-width: 10px;
+
+  border: 1px solid transparent;
+  background: transparent;
+  color: @on_surface_variant;
+}
+
+#workspaces button.active {
+  background: @primary;
+  border-color: @primary;
+  color: @on_primary;
+}
+
+#workspaces button.urgent {
+  background: @error;
+  border-color: @error;
+  color: @on_error;
+}
+
+#workspaces button:hover {
+  border-color: @primary;
+}
+
+/* center window title */
+#window {
+  padding: 0 14px;
+}
+
+/* right modules spacing & pills */
+
+#cpu,
+#memory,
+#backlight,
+#pulseaudio,
+#bluetooth,
+#network,
+#battery,
+#clock,
+#custom-power {
+  margin-left: 8px;
+  margin-right: 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 13px; /* iconos/texto un poquito más grandes a la derecha */
+  color: @on_surface;
+}
+
+#cpu:hover,
+#memory:hover,
+#backlight:hover,
+#pulseaudio:hover,
+#bluetooth:hover,
+#network:hover,
+#battery:hover,
+#clock:hover,
+#custom-power:hover {
+  background: @surface_container_high;
+}
+
+/* tray pegadito pero sin fondo de pastilla */
+#tray {
+  margin-left: 6px;
+  margin-right: 4px;
+}
+
+/* reloj un poquito más marcado */
+#clock {
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: @primary; /* lo destacamos un poco con el color primario */
+}
+
+/* Módulo de música */
+#custom-player {
+  padding: 0 10px;
+  margin: 0 6px;
+  font-size: 12px;
+  color: @on_surface_variant;
+}
+
+/* Estados especiales de batería */
+#battery.charging {
+  color: @primary;
+}
+
+#battery.critical {
+  color: @error;
+}
+
+/* Bluetooth apagado un poco dim */
+#bluetooth.off,
+#bluetooth.disabled {
+  color: @on_surface_variant;
+  opacity: 0.6;
+}

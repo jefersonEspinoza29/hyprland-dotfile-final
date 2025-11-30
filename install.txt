@@ -1,0 +1,197 @@
+instrucciones de todo lo que vamos a instalar ademas de las carpetas que ya tengo que son .config de todas las aplicaciones a instalar en este Cambios
+tengo estas aplicaciones:
+ahora vamos a copiar mi repositorio de mis configuraciones:
+pero antes de eso instalamos git para copiar y pegar en la ruta
+    sudo pacman -S git
+    git clone https://github.com/jefersonEspinoza29/proyecto-hyprland-final
+    cd proyecto-hyprland-final
+    chmod +x install.sh 
+
+despues vamos a copiar el contenido de estas carpetas :
+    eww
+    gsimplecal
+    hypr
+    kitty
+    matugen
+    rofi
+    waybar
+    wlogout
+todo eso va a ir dentro de la carpeta /home/"(nombre de usuario)"/.config
+y reemplazamos todo para agregar las configuraciones
+damos permisos de ejecucion de scripts:
+    sudo chmod +x ~/.config/eww/scripts/brightness_osd.sh
+    sudo chmod +x ~/.config/eww/scripts/volume_osd.sh
+    sudo chmod +x ~/.config/hypr/scripts/wallpaper.sh
+    sudo chmod +x ~/.config/waybar/scripts/bluetooth-toggle.sh
+    sudo chmod +x ~/.config/waybar/scripts/bluetooth-tray-toggle.sh
+    sudo chmod +x ~/.config/waybar/scripts/gnome-calendar-toggle.sh
+    sudo chmod +x ~/.config/waybar/scripts/nm-applet-toggle.sh
+    sudo chmod +x ~/.config/waybar/scripts/playerctl.sh
+
+
+luego ya vamos a instalar los programas nesesarios:
+
+primero instalamos sddm:
+    sudo pacaman -S sddm
+
+habilitamos sddm para arrancar al inicio:
+    sudo systemctl start sddm
+
+despues instalamos hyprland
+    sudo pacman -S hyprland
+
+despues instalamos kitty
+    sudo pacman -S kitty
+
+despues instalamos playerctl y jq
+    sudo pacman -S playerctl jq
+
+luego instalamos yay
+    sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
+
+despues swww
+    yay -S swww
+
+luego eww
+    yay -S eww
+
+luego gsimplecal
+    sudo pacman -S gsimplecal
+luego matugen
+    yay -S matugen 
+
+luego rofi
+    yay -S rofi
+
+luego waybar
+    yay -S waybar
+
+luego wlogout
+    yay -S wlogout
+
+luego hyprshot para las caputras
+    yay -S hyprshot
+
+luego blueman
+    sudo pacman -S blueman
+
+luego gnome-calendar
+    sudo pacman -S gnome-calendar
+
+ahora agregamos plymouth
+    sudo pacman -S plymouth
+
+ahora vamos a configurar plymouth:
+instalamos este tema:
+    yay -S plymouth-theme-Unrap-git
+
+ahora configuramos los HOOKS
+
+entramos a /etc/mkinitcpio.conf
+y configuramos esto:
+
+    Si está utilizando el systemd Hook, debe ser antes plymouth.
+
+    Además, asegúrese de colocar plymouth Antes de la encrypt o sd-encrypt Gancho si su sistema está encriptado con dm-crypt.
+
+    Por último, regenerar los initramfs. 
+    ejemplo:
+    Añadir plymouth Al HOOKS Arregle en mkinitcpio.conf.
+        HOOKS=(... plymouth ...)
+    ejemplo completo en mi caso:
+        HOOKS=(base udev plymouth autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)
+
+    regeneramos mkinitcpio
+        sudo mkinitcpio -P
+    
+    ahora agregamos configuracion a systemd
+    en mi caso esta en esta ruta:
+        /boot/loader/entries
+    y tengo dos archivos en mi caso:
+        2025-11-30_03-55-41_linux.conf
+        2025-11-30_03-55-41_linux-fallback.conf
+    eso puede variar asique hay que modificar los dos de acuerdo a como se llaman
+    bueno despues de saber como se llaman originalmente modificaremos asi:
+    vamos a agregar:
+    quiet splash modprobe.blacklist=nvidia,nvidia_drm,nvidia_uvm,nvidia_modeset
+    al final asi:
+    en este caso es del archivo:
+        2025-11-30_03-55-41_linux.conf:
+        options root=PARTUUID=f5c1faee-df67-4bcc-9487-94ca704cf14e zswap.enabled=0 rw rootfstype=ext4 quiet splash modprobe.blacklist=nvidia,nvidia_drm,nvidia_uvm,nvidia_modeset
+        2025-11-30_03-55-41_linux-fallback.conf
+        options root=PARTUUID=f5c1faee-df67-4bcc-9487-94ca704cf14e zswap.enabled=0 rw rootfstype=ext4 quiet splash modprobe.blacklist=nvidia,nvidia_drm,nvidia_uvm,nvidia_modeset
+    eso e puesto en mi caso creo que con el script de instalacion si podemos modificar todo eso.
+    eso es en mi caso,pero eso puede variar
+
+ahora aplicamos el tema instalado
+    sudo plymouth-set-default-theme -R unrap
+vamos a revisar el tema como agregar esto:
+ShowDelay=0
+esta es la ruta:
+    /etc/plymouth/plymouthd.conf
+en mi caso tengo este contenido:
+    [Daemon]
+    Theme=unrap
+    ShowDelay=0
+    # Administrator customizations go in this file
+    #[Daemon]
+    #Theme=fade-in
+    
+    ahi agregamos ShowDelay=0
+
+por ultimo 
+regeneramos mkinitcpio
+        sudo mkinitcpio -P
+
+con eso ya deberia instalar el plymouth.
+
+ahora si quieres quitar el tiempo de espera de tu cargador de arranque modifica esto:
+en mi caso tengo systemd
+    /boot/loader/loader.conf
+cambiamos por esto:
+    timeout 0
+    #console-mode keep
+
+y guardamos.
+
+continuamos con instalaciones
+
+    sudo pacman -S brightnessctl
+    sudo pacman -S pavucontrol 
+    sudo pacman -S networkmanager
+
+habilitamos NetworkManager
+    sudo systemctl enable --now NetworkManager
+
+
+ahora vamos a configurar el brillo 
+
+    git clone https://gitlab.com/cameronnemo/brillo.git
+    cd brillo
+    make
+    sudo make install
+Opcionalmente — para permitir que usuarios normales cambien el brillo (sin necesidad de root) — puedes instalar con permisos de grupo o setgid, así
+
+sudo make install GROUP=video
+sudo make install.setgid GROUP=video
+
+
+instalamos auto-cpufreq
+    yay -S auto-cpufreq
+
+activamos el servicio:
+    sudo systemctl enable --now auto-cpufreq.service
+
+ahora instalaremos los drivers de intel:
+    sudo pacman -S --needed mesa mesa-utils intel-media-driver vulkan-intel libva-intel-driver
+
+
+ahora instalamos los drivers de nvidia:
+    sudo pacman -S --needed nvidia nvidia-utils nvidia-settings nvidia-prime vulkan-icd-loader
+
+    sudo pacman -S --needed lib32-mesa lib32-nvidia-utils lib32-vulkan-intel lib32-vulkan-icd-loader
+
+
+
+sudo mv /etc/X11/xorg.conf /etc/X11/xorg.conf.bak
+sudo mv /etc/X11/xorg.conf.nvidia-xconfig-original /etc/X11/xorg.conf.nvidia-xconfig-original.bak

@@ -1,0 +1,25 @@
+[config]
+
+
+[templates.hyprland]
+input_path = '~/.config/matugen/templates/hyprlandcolors.conf'
+output_path = '~/.config/hypr/modules/colors.conf'
+post_hook = 'hyprctl reload'
+
+[templates.kitty]
+input_path = '~/.config/matugen/templates/kittycolors.conf'
+output_path = '~/.config/kitty/colors.conf'
+post_hook = 'pkill -SIGUSR1 kitty'
+
+[templates.waybar]
+input_path = '~/.config/matugen/templates/waybarcolors.conf'
+output_path = '~/.config/waybar/colors.css'
+post_hook = 'pkill -SIGUSR2 waybar'
+
+[templates.wlogout]
+input_path = '~/.config/matugen/templates/wlogoutcolors.conf'
+output_path = '~/.config/wlogout/colors.css'
+
+[templates.rofi]
+input_path = '~/.config/matugen/templates/rofficolors.conf'
+output_path = '~/.config/rofi/colors.rasi'

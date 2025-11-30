@@ -1,0 +1,22 @@
+# Ignorar todo por defecto
+/*
+
+# Pero NO ignores estas carpetas (y todo lo que hay dentro)
+!/eww/
+!/kitty/
+!/rofi/
+!/waybar/
+!/hypr/
+!/wlogout/
+
+!/gsimplecal/
+!/matugen/
+# No ignores estos archivos en la raíz del repo
+
+
+# No ignores el propio .gitignore
+!/.gitignore
+!/install.txt
+!/install.sh
+
+!/README.md

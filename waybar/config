@@ -1,0 +1,164 @@
+{
+  "layer": "top",
+  "position": "top",
+  "margin-top": 8,
+  "margin-left": 12,
+  "margin-right": 12,
+  "height": 32,
+  "modules-left": [
+    "custom/launcher",
+    "hyprland/workspaces",
+    "custom/player"
+  ],
+  "modules-center": [
+    "hyprland/window"
+  ],
+  "modules-right": [
+    "cpu",
+    "memory",
+    "backlight",
+    "pulseaudio",
+    "bluetooth",
+    "network",
+    "battery",
+    "tray",
+    "clock",
+    "custom/power"
+  ],
+  "hyprland/workspaces": {
+    "format": "{icon}",
+    "on-click": "hyprctl dispatch workspace {id}",
+    "format-icons": {
+      "1": "●",
+      "2": "●",
+      "3": "●",
+      "4": "●",
+      "5": "●"
+    }
+  },
+  "hyprland/window": {
+    "format": "{}",
+    "max-length": 60,
+    "separate-outputs": true
+  },
+  "cpu": {
+    "format": " {usage}%",
+    "interval": 2,
+    "tooltip": true,
+    "tooltip-format": "CPU: {usage}%"
+  },
+  "memory": {
+    "format": " {percentage}%", 
+    "interval": 5,
+    "tooltip": true,
+    "tooltip-format": "Memoria usada: {used:0.1f} GiB"
+  },
+  "backlight": {
+    "format": "{icon}",
+    "format-icons": [
+      "󰃞",
+      "󰃟",
+      "󰃠",
+      "󰃡",
+      "󰃢"
+    ],
+    "on-scroll-up": "brightnessctl set +5%",
+    "on-scroll-down": "brightnessctl set 5%-",
+    "tooltip": true,
+    "tooltip-format": "Brillo: {percent}%"
+  },
+  "pulseaudio": {
+    "format": "{icon}",
+    "format-muted": "󰝟 ",
+    "format-icons": {
+      "default": [
+        "󰕿",
+        "󰖀",
+        "󰕾"
+      ]
+    },
+    "tooltip": true,
+    "tooltip-format": "Volumen: {volume}%\nSalida: {desc}",
+    "on-click": "pavucontrol"
+  },
+  "bluetooth": {
+    "format": "󰂯",
+    "format-disabled": "󰂲",
+    "format-off": "󰂲",
+    "format-connected": "󰂱 {num_connections}",
+    "tooltip": true,
+    "tooltip-format": "Bluetooth: {status}",
+    "tooltip-format-disabled": "Bluetooth: deshabilitado",
+    "tooltip-format-off": "Bluetooth: apagado",
+    "tooltip-format-on": "Bluetooth: encendido (sin dispositivos)",
+    "tooltip-format-connected": "Bluetooth: conectado ({num_connections} dispositivo/s)\n\n{device_enumerate}",
+    "tooltip-format-no-controller": "Bluetooth: sin adaptador disponible",
+    "tooltip-format-enumerate-connected": "• {device_alias}",
+    "on-click": "/home/jheff/.config/waybar/scripts/bluetooth-tray-toggle.sh",
+    "on-click-right": "blueman-manager"
+  },
+  "network": {
+    "format-wifi": "",
+    "format-ethernet": "󰈁",
+    "format-disconnected": "󰖪",
+    "tooltip": true,
+    "tooltip-format-wifi": "Wi-Fi: {essid}\nSeñal: {signalStrength}% ({signaldBm} dBm)\nIP: {ipaddr}/{cidr}",
+    "tooltip-format-ethernet": "Ethernet: {ifname}\nIP: {ipaddr}/{cidr}",
+    "tooltip-format-disconnected": "Sin conexión de red",
+    "on-click": "/home/jheff/.config/waybar/scripts/nm-applet-toggle.sh",
+    "on-click-right": "nm-connection-editor"
+  },
+  "battery": {
+    "format": "{icon} {capacity}%",
+    "format-charging": "󰂄 {capacity}%",
+    "format-plugged": "󰂄 {capacity}%",
+    "format-alt": "{time}",
+    "format-icons": [
+      "󰁺",
+      "󰁻",
+      "󰁼",
+      "󰁽",
+      "󰁾",
+      "󰁿",
+      "󰂀",
+      "󰂁",
+      "󰂂",
+      "󰁹"
+    ],
+    "critical-threshold": 15,
+    "tooltip": true,
+    "tooltip-format": "Batería: {capacity}%\nTiempo estimado: {time}"
+  },
+  "clock": {
+    "format": " {:%H:%M}",
+    "tooltip-format": "{:%A %d de %B de %Y}",
+    "locale": "es_PE.UTF-8",
+    "on-click": "gsimplecal",
+    "on-click-right": "gnome-calendar",
+    "on-scroll-up": "gsimplecal prev_month",
+    "on-scroll-down": "gsimplecal next_month"
+  },
+  "tray": {
+    "icon-size": 18,
+    "spacing": 6
+  },
+  "custom/launcher": {
+    "format": "",
+    "on-click": "rofi -show drun -theme ~/.config/rofi/launcher.rasi",
+    "tooltip": false
+  },
+  "custom/player": {
+    "format": "{}",
+    "exec": "/home/jheff/.config/waybar/scripts/playerctl.sh",
+    "interval": 1,
+    "on-click": "playerctl play-pause",
+    "on-scroll-up": "playerctl next",
+    "on-scroll-down": "playerctl previous",
+    "tooltip": true
+  },
+  "custom/power": {
+    "format": "",
+    "on-click": "wlogout",
+    "tooltip": "Apagar / Reiniciar / Bloquear / Cerrar sesión"
+  }
+}

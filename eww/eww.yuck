@@ -1,0 +1,88 @@
+;; ============================
+;;  OSD de brillo estilo macOS
+;; ============================
+
+(defvar brightness-level 0)
+
+(defwindow brightness-osd
+  :monitor 0
+  :exclusive false
+  :stacking "overlay"
+  :focusable false
+  :geometry (geometry
+    :x "40%"
+    :y "74%"
+    :width "180px"
+    :height "180px")
+  (brightness-osd-widget))
+
+(defwidget brightness-osd-widget []
+  (box
+    :class "brightness-osd"
+    :orientation "v"
+    :space-evenly false
+    :halign "center"
+    :valign "center"
+    :width "180px"
+    :height "180px"
+    :style "padding: 20px;"
+
+    (label
+      :class "brightness-osd-icon"
+      :text "☀"
+      :style "font-size: 60px; margin-bottom: 16px;")
+
+    (box
+      :class "brightness-osd-bar"
+      :style "margin-top: 8px;
+              min-width: 120px;
+              min-height: 14px;
+              border-radius: 9999px;
+              padding: 3px;
+              background-size: ${brightness-level}% 100%;")))
+
+;; ============================
+;;  OSD de volumen estilo macOS
+;; ============================
+
+(defvar volume-level 0)
+
+(defwindow volume-osd
+  :monitor 0
+  :exclusive false
+  :stacking "overlay"
+  :focusable false
+  :geometry (geometry
+    :x "55%"          ;; lo mueves donde quieras, igual que el de brillo
+    :y "74%"
+    :width "180px"
+    :height "180px")
+  (volume-osd-widget))
+
+(defwidget volume-osd-widget []
+  (box
+    :class "volume-osd"
+     :orientation "v"
+    :space-evenly false
+    :halign "center"
+    :valign "center"
+    :width "180px"
+    :height "180px"
+    :style "padding: 20px;"
+
+    (label
+      :class "brightness-osd-icon"
+      :text " "
+      :style "font-size: 60px; margin-bottom: 16px;")
+
+
+    ;; Barra de volumen (igual que brillo pero con otra clase)
+    (box
+      :class "volume-osd-bar"
+      :style "margin-top: 8px;
+              min-width: 120px;
+              min-height: 14px;
+              border-radius: 9999px;
+              padding: 3px;
+              background-size: ${volume-level}% 100%;")))
+
