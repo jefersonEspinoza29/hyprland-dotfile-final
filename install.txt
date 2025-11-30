@@ -195,3 +195,28 @@ ahora instalamos los drivers de nvidia:
 
 sudo mv /etc/X11/xorg.conf /etc/X11/xorg.conf.bak
 sudo mv /etc/X11/xorg.conf.nvidia-xconfig-original /etc/X11/xorg.conf.nvidia-xconfig-original.bak
+
+
+ahora configuramos el tema:
+instalamos dependencias
+    sudo pacman -S --needed qt6-svg qt6-virtualkeyboard qt6-multimedia-ffmpeg qt6-5compat qt6-declarative
+
+clonamos el repositorio:
+    git clone https://github.com/Keyitdev/sddm-astronaut-theme.git
+    cd sddm-astronaut-theme
+    sudo mkdir -p /usr/share/sddm/themes
+    sudo cp -r src/sddm-astronaut-theme /usr/share/sddm/themes/
+
+
+ahora le decimos a sddm que tema usar:
+sudo mkdir -p /etc/sddm.conf.d
+
+sudo tee /etc/sddm.conf.d/10-theme.conf >/dev/null <<'EOF'
+[Theme]
+Current=sddm-astronaut-theme
+EOF
+
+copiamos las fuentes:
+sudo cp -r /usr/share/sddm/themes/sddm-astronaut-theme/Fonts/* /usr/share/fonts/
+sudo fc-cache -fv
+
