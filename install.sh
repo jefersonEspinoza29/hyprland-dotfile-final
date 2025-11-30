@@ -57,14 +57,14 @@ done
 # 3. Permisos de ejecución en scripts de eww / hypr / waybar
 # -----------------------------------------------------------------------------
 echo "[+] Ajustando permisos de scripts..."
-chmod +x "${CONFIG_DIR}/eww/scripts/brightness_osd.sh"       2>/dev/null || true
-chmod +x "${CONFIG_DIR}/eww/scripts/volume_osd.sh"           2>/dev/null || true
-chmod +x "${CONFIG_DIR}/hypr/scripts/wallpaper.sh"           2>/dev/null || true
-chmod +x "${CONFIG_DIR}/waybar/scripts/bluetooth-toggle.sh"  2>/dev/null || true
-chmod +x "${CONFIG_DIR}/waybar/scripts/bluetooth-tray-toggle.sh" 2>/dev/null || true
-chmod +x "${CONFIG_DIR}/waybar/scripts/gnome-calendar-toggle.sh" 2>/dev/null || true
-chmod +x "${CONFIG_DIR}/waybar/scripts/nm-applet-toggle.sh"  2>/dev/null || true
-chmod +x "${CONFIG_DIR}/waybar/scripts/playerctl.sh"         2>/dev/null || true
+chmod +x "${CONFIG_DIR}/eww/scripts/brightness_osd.sh"            2>/dev/null || true
+chmod +x "${CONFIG_DIR}/eww/scripts/volume_osd.sh"                2>/dev/null || true
+chmod +x "${CONFIG_DIR}/hypr/scripts/wallpaper.sh"                2>/dev/null || true
+chmod +x "${CONFIG_DIR}/waybar/scripts/bluetooth-toggle.sh"       2>/dev/null || true
+chmod +x "${CONFIG_DIR}/waybar/scripts/bluetooth-tray-toggle.sh"  2>/dev/null || true
+chmod +x "${CONFIG_DIR}/waybar/scripts/gnome-calendar-toggle.sh"  2>/dev/null || true
+chmod +x "${CONFIG_DIR}/waybar/scripts/nm-applet-toggle.sh"       2>/dev/null || true
+chmod +x "${CONFIG_DIR}/waybar/scripts/playerctl.sh"              2>/dev/null || true
 
 # -----------------------------------------------------------------------------
 # 4. Instalar yay (si no existe)
@@ -85,8 +85,9 @@ fi
 # -----------------------------------------------------------------------------
 echo "[+] Instalando paquetes principales con pacman..."
 
-sudo pacman -S --needed sddm hyprland kitty playerctl jq gsimplecal blueman gnome-calendar plymouth \
-  brightnessctl firefox code pavucontrol networkmanager mesa mesa-utils \
+sudo pacman -S --needed \
+  sddm hyprland kitty playerctl jq gsimplecal blueman gnome-calendar plymouth \
+  brightnessctl pavucontrol networkmanager mesa mesa-utils \
   intel-media-driver vulkan-intel libva-intel-driver \
   nvidia nvidia-utils nvidia-settings nvidia-prime vulkan-icd-loader \
   lib32-mesa lib32-nvidia-utils lib32-vulkan-intel lib32-vulkan-icd-loader
@@ -205,6 +206,45 @@ sudo mv /etc/X11/xorg.conf /etc/X11/xorg.conf.bak 2>/dev/null || true
 sudo mv /etc/X11/xorg.conf.nvidia-xconfig-original /etc/X11/xorg.conf.nvidia-xconfig-original.bak 2>/dev/null || true
 
 # -----------------------------------------------------------------------------
+# 13. Dependencias Qt6 para tema SDDM astronaut
+# -----------------------------------------------------------------------------
+echo "[+] Instalando dependencias Qt6 para tema SDDM..."
+sudo pacman -S --needed qt6-svg qt6-virtualkeyboard qt6-multimedia-ffmpeg qt6-5compat qt6-declarative
+
+# -----------------------------------------------------------------------------
+# 14. Instalar y configurar tema SDDM 'sddm-astronaut-theme'
+# -----------------------------------------------------------------------------
+echo "[+] Instalando tema SDDM 'sddm-astronaut-theme'..."
+cd "${TARGET_HOME}"
+if [ ! -d "${TARGET_HOME}/sddm-astronaut-theme" ]; then
+  git clone https://github.com/Keyitdev/sddm-astronaut-theme.git
+fi
+
+if [ -d "${TARGET_HOME}/sddm-astronaut-theme/src/sddm-astronaut-theme" ]; then
+  cd sddm-astronaut-theme
+  sudo mkdir -p /usr/share/sddm/themes
+  sudo cp -r src/sddm-astronaut-theme /usr/share/sddm/themes/
+else
+  echo "[!] No se encontró src/sddm-astronaut-theme en el repo clonado, se omite copia del tema."
+fi
+cd "${REPO_DIR}"
+
+echo "[+] Configurando SDDM para usar el tema 'sddm-astronaut-theme'..."
+sudo mkdir -p /etc/sddm.conf.d
+sudo tee /etc/sddm.conf.d/10-theme.conf >/dev/null <<'EOF'
+[Theme]
+Current=sddm-astronaut-theme
+EOF
+
+echo "[+] Copiando fuentes del tema SDDM (si existen)..."
+if [ -d /usr/share/sddm/themes/sddm-astronaut-theme/Fonts ]; then
+  sudo cp -r /usr/share/sddm/themes/sddm-astronaut-theme/Fonts/* /usr/share/fonts/ 2>/dev/null || true
+  sudo fc-cache -fv
+else
+  echo "[!] No se encontró /usr/share/sddm/themes/sddm-astronaut-theme/Fonts, se omite copia de fuentes."
+fi
+
+# -----------------------------------------------------------------------------
 # FIN
 # -----------------------------------------------------------------------------
 echo
@@ -213,6 +253,7 @@ echo "  Instalación completada."
 echo "  - Dotfiles copiados a ${CONFIG_DIR}"
 echo "  - Paquetes instalados (Hyprland, SDDM, etc.)"
 echo "  - Plymouth configurado con tema 'unrap'"
+echo "  - SDDM usando tema 'sddm-astronaut-theme'"
 echo "  - NVIDIA en modo offload con prime-run (blacklist en arranque)"
 echo "==============================================================="
 echo "Reinicia el sistema para aplicar todos los cambios."
