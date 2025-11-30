@@ -86,7 +86,7 @@ fi
 echo "[+] Instalando paquetes principales con pacman..."
 
 sudo pacman -S --needed sddm hyprland kitty playerctl jq gsimplecal blueman gnome-calendar plymouth \
-  brightnessctl pavucontrol networkmanager mesa mesa-utils \
+  brightnessctl firefox pavucontrol networkmanager mesa mesa-utils \
   intel-media-driver vulkan-intel libva-intel-driver \
   nvidia nvidia-utils nvidia-settings nvidia-prime vulkan-icd-loader \
   lib32-mesa lib32-nvidia-utils lib32-vulkan-intel lib32-vulkan-icd-loader
