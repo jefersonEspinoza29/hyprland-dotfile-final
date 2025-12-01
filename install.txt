@@ -1,222 +1,281 @@
-instrucciones de todo lo que vamos a instalar ademas de las carpetas que ya tengo que son .config de todas las aplicaciones a instalar en este Cambios
-tengo estas aplicaciones:
-ahora vamos a copiar mi repositorio de mis configuraciones:
-pero antes de eso instalamos git para copiar y pegar en la ruta
+INSTALACIÓN AUTOMÁTICA – ENTORNO HYPRLAND (JHEFF DOTFILES)
+==========================================================
+
+Requisitos:
+- Arch Linux o derivado con pacman.
+- Systemd-boot recomendado (el script ajusta /boot/loader si existe).
+- Conexión a internet.
+
+1. Clonar el repositorio
+------------------------
+
+Instala git si aún no lo tienes:
+
     sudo pacman -S git
+
+(OPCIONAL) Instalar Dolphin (explorador de archivos) antes de correr el script:
+
+    sudo pacman -S dolphin
+
+Clona el repo e ingresa a la carpeta:
+
     git clone https://github.com/jefersonEspinoza29/proyecto-hyprland-final
     cd proyecto-hyprland-final
-    chmod +x install.sh 
 
-despues vamos a copiar el contenido de estas carpetas :
-    eww
-    gsimplecal
-    hypr
-    kitty
-    matugen
-    rofi
-    waybar
-    wlogout
-todo eso va a ir dentro de la carpeta /home/"(nombre de usuario)"/.config
-y reemplazamos todo para agregar las configuraciones
-damos permisos de ejecucion de scripts:
-    sudo chmod +x ~/.config/eww/scripts/brightness_osd.sh
-    sudo chmod +x ~/.config/eww/scripts/volume_osd.sh
-    sudo chmod +x ~/.config/hypr/scripts/wallpaper.sh
-    sudo chmod +x ~/.config/waybar/scripts/bluetooth-toggle.sh
-    sudo chmod +x ~/.config/waybar/scripts/bluetooth-tray-toggle.sh
-    sudo chmod +x ~/.config/waybar/scripts/gnome-calendar-toggle.sh
-    sudo chmod +x ~/.config/waybar/scripts/nm-applet-toggle.sh
-    sudo chmod +x ~/.config/waybar/scripts/playerctl.sh
+Da permisos de ejecución al instalador:
+
+    chmod +x install.sh
+
+Ejecuta el script **como usuario normal** (NO root):
+
+    ./install.sh
 
 
-luego ya vamos a instalar los programas nesesarios:
+2. ¿Qué hace el script?
+-----------------------
 
-primero instalamos sddm:
-    sudo pacaman -S sddm
+2.1. Dependencias base
+~~~~~~~~~~~~~~~~~~~~~~
 
-habilitamos sddm para arrancar al inicio:
-    sudo systemctl start sddm
+Instala:
 
-despues instalamos hyprland
-    sudo pacman -S hyprland
+- git
+- base-devel
+- go-md2man
 
-despues instalamos kitty
-    sudo pacman -S kitty
+Necesarios para compilar paquetes AUR (yay, brillo, etc.).
 
-despues instalamos playerctl y jq
-    sudo pacman -S playerctl jq
 
-luego instalamos yay
-    sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
+2.2. Copia de dotfiles a ~/.config
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-despues swww
-    yay -S swww
+Copia estas carpetas desde el repo a:
 
-luego eww
-    yay -S eww
+    /home/<usuario>/.config
 
-luego gsimplecal
-    sudo pacman -S gsimplecal
-luego matugen
-    yay -S matugen 
+- eww
+- gsimplecal
+- hypr
+- kitty
+- matugen
+- rofi
+- waybar
+- wlogout
 
-luego rofi
-    yay -S rofi
+Si ya existen, les hace backup:
 
-luego waybar
-    yay -S waybar
+    ~/.config/<carpeta>.bak.<timestamp>
 
-luego wlogout
-    yay -S wlogout
+Luego da permisos de ejecución a los scripts:
 
-luego hyprshot para las caputras
-    yay -S hyprshot
+- ~/.config/eww/scripts/brightness_osd.sh
+- ~/.config/eww/scripts/volume_osd.sh
+- ~/.config/hypr/scripts/wallpaper.sh
+- ~/.config/waybar/scripts/bluetooth-toggle.sh
+- ~/.config/waybar/scripts/bluetooth-tray-toggle.sh
+- ~/.config/waybar/scripts/gnome-calendar-toggle.sh
+- ~/.config/waybar/scripts/nm-applet-toggle.sh
+- ~/.config/waybar/scripts/playerctl.sh
 
-luego blueman
-    sudo pacman -S blueman
 
-luego gnome-calendar
-    sudo pacman -S gnome-calendar
+2.3. Wallpapers
+~~~~~~~~~~~~~~~
 
-ahora agregamos plymouth
-    sudo pacman -S plymouth
+Crea la carpeta:
 
-ahora vamos a configurar plymouth:
-instalamos este tema:
-    yay -S plymouth-theme-Unrap-git
+    ~/imagenes/wallpapers
 
-ahora configuramos los HOOKS
+y copia todos los fondos desde el repo, buscando en este orden:
 
-entramos a /etc/mkinitcpio.conf
-y configuramos esto:
+- proyecto-hyprland-final/sources/wallpapers
+- proyecto-hyprland-final/wallpapers
 
-    Si está utilizando el systemd Hook, debe ser antes plymouth.
+Estas imágenes son las que usa el script:
 
-    Además, asegúrese de colocar plymouth Antes de la encrypt o sd-encrypt Gancho si su sistema está encriptado con dm-crypt.
+    ~/.config/hypr/scripts/wallpaper.sh
 
-    Por último, regenerar los initramfs. 
-    ejemplo:
-    Añadir plymouth Al HOOKS Arregle en mkinitcpio.conf.
-        HOOKS=(... plymouth ...)
-    ejemplo completo en mi caso:
-        HOOKS=(base udev plymouth autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)
+que apunta a:
 
-    regeneramos mkinitcpio
-        sudo mkinitcpio -P
-    
-    ahora agregamos configuracion a systemd
-    en mi caso esta en esta ruta:
-        /boot/loader/entries
-    y tengo dos archivos en mi caso:
-        2025-11-30_03-55-41_linux.conf
-        2025-11-30_03-55-41_linux-fallback.conf
-    eso puede variar asique hay que modificar los dos de acuerdo a como se llaman
-    bueno despues de saber como se llaman originalmente modificaremos asi:
-    vamos a agregar:
-    quiet splash modprobe.blacklist=nvidia,nvidia_drm,nvidia_uvm,nvidia_modeset
-    al final asi:
-    en este caso es del archivo:
-        2025-11-30_03-55-41_linux.conf:
-        options root=PARTUUID=f5c1faee-df67-4bcc-9487-94ca704cf14e zswap.enabled=0 rw rootfstype=ext4 quiet splash modprobe.blacklist=nvidia,nvidia_drm,nvidia_uvm,nvidia_modeset
-        2025-11-30_03-55-41_linux-fallback.conf
-        options root=PARTUUID=f5c1faee-df67-4bcc-9487-94ca704cf14e zswap.enabled=0 rw rootfstype=ext4 quiet splash modprobe.blacklist=nvidia,nvidia_drm,nvidia_uvm,nvidia_modeset
-    eso e puesto en mi caso creo que con el script de instalacion si podemos modificar todo eso.
-    eso es en mi caso,pero eso puede variar
+    $HOME/imagenes/wallpapers
 
-ahora aplicamos el tema instalado
+
+2.4. Instalación de yay (AUR helper)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Si yay no existe, el script:
+
+- Clona: https://aur.archlinux.org/yay.git
+- Compila e instala con:
+
+    makepkg -si --noconfirm
+
+
+2.5. Paquetes principales (pacman)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Instala, entre otros:
+
+- Sesión / entorno:
+    - sddm, hyprland, kitty, dolphin, gsimplecal, blueman, gnome-calendar, plymouth
+- Audio y volumen:
+    - playerctl, jq, brightnessctl, pavucontrol, pamixer
+- Red:
+    - networkmanager, network-manager-applet
+- Navegador y editor:
+    - firefox, code
+- Drivers Intel:
+    - mesa, mesa-utils, intel-media-driver, vulkan-intel, libva-intel-driver
+- Drivers NVIDIA:
+    - nvidia, nvidia-utils, nvidia-settings, nvidia-prime, vulkan-icd-loader
+    - lib32-mesa, lib32-nvidia-utils, lib32-vulkan-intel, lib32-vulkan-icd-loader
+- Fuentes para Waybar e iconos:
+    - noto-fonts, noto-fonts-emoji, noto-fonts-extra
+    - ttf-jetbrains-mono-nerd, ttf-nerd-fonts-symbols, otf-font-awesome
+
+Además:
+
+- Habilita SDDM:
+      sudo systemctl enable --now sddm
+- Habilita NetworkManager:
+      sudo systemctl enable --now NetworkManager
+- Actualiza la caché de fuentes:
+      sudo fc-cache -fv
+
+
+2.6. Paquetes AUR (yay)
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Instala:
+
+- swww           (fondos animados / transiciones)
+- eww            (widgets, barras, OSD)
+- matugen        (temas basados en el wallpaper)
+- rofi           (launcher)
+- waybar         (barra de estado)
+- wlogout        (menú de logout)
+- hyprshot       (capturas de pantalla)
+- plymouth-theme-Unrap-git  (tema de Plymouth)
+- auto-cpufreq   (gestión de energía en CPU)
+- sddm-astronaut-theme (tema de login para SDDM)
+
+Habilita el servicio de auto-cpufreq:
+
+    sudo systemctl enable --now auto-cpufreq.service
+
+
+2.7. Configuración de Plymouth (pantalla de arranque)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Modifica /etc/mkinitcpio.conf para añadir el hook:
+
+    plymouth
+
+dentro de la línea HOOKS=(), de forma segura sin romper el archivo.
+
+- Regenera los initramfs:
+
+    sudo mkinitcpio -P
+
+- Aplica el tema:
+
     sudo plymouth-set-default-theme -R unrap
-vamos a revisar el tema como agregar esto:
-ShowDelay=0
-esta es la ruta:
+
+- Crea / ajusta:
+
     /etc/plymouth/plymouthd.conf
-en mi caso tengo este contenido:
+
+con:
+
     [Daemon]
     Theme=unrap
     ShowDelay=0
-    # Administrator customizations go in this file
-    #[Daemon]
-    #Theme=fade-in
-    
-    ahi agregamos ShowDelay=0
 
-por ultimo 
-regeneramos mkinitcpio
-        sudo mkinitcpio -P
+y vuelve a ejecutar:
 
-con eso ya deberia instalar el plymouth.
+    sudo mkinitcpio -P
 
-ahora si quieres quitar el tiempo de espera de tu cargador de arranque modifica esto:
-en mi caso tengo systemd
+
+2.8. Configuración de systemd-boot
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Si existe el directorio:
+
+    /boot/loader/entries
+
+el script edita cada *.conf y agrega al final de la línea "options":
+
+    quiet splash modprobe.blacklist=nvidia,nvidia_drm,nvidia_uvm,nvidia_modeset
+
+Además, en:
+
     /boot/loader/loader.conf
-cambiamos por esto:
+
+ajusta:
+
     timeout 0
-    #console-mode keep
-
-y guardamos.
-
-continuamos con instalaciones
-
-    sudo pacman -S brightnessctl
-    sudo pacman -S pavucontrol 
-    sudo pacman -S networkmanager
-
-habilitamos NetworkManager
-    sudo systemctl enable --now NetworkManager
 
 
-ahora vamos a configurar el brillo 
+2.9. Brillo (control de brillo por terminal)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Compila brillo en un directorio temporal:
 
     git clone https://gitlab.com/cameronnemo/brillo.git
-    cd brillo
     make
     sudo make install
-Opcionalmente — para permitir que usuarios normales cambien el brillo (sin necesidad de root) — puedes instalar con permisos de grupo o setgid, así
+    sudo make install GROUP=video
+    sudo make install.setgid GROUP=video
 
-sudo make install GROUP=video
-sudo make install.setgid GROUP=video
-
-
-instalamos auto-cpufreq
-    yay -S auto-cpufreq
-
-activamos el servicio:
-    sudo systemctl enable --now auto-cpufreq.service
-
-ahora instalaremos los drivers de intel:
-    sudo pacman -S --needed mesa mesa-utils intel-media-driver vulkan-intel libva-intel-driver
+Luego borra el directorio temporal.
 
 
-ahora instalamos los drivers de nvidia:
-    sudo pacman -S --needed nvidia nvidia-utils nvidia-settings nvidia-prime vulkan-icd-loader
+2.10. Limpieza de Xorg y NVIDIA
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    sudo pacman -S --needed lib32-mesa lib32-nvidia-utils lib32-vulkan-intel lib32-vulkan-icd-loader
+Renombra (si existen):
 
+    /etc/X11/xorg.conf
+    /etc/X11/xorg.conf.nvidia-xconfig-original
 
-
-sudo mv /etc/X11/xorg.conf /etc/X11/xorg.conf.bak
-sudo mv /etc/X11/xorg.conf.nvidia-xconfig-original /etc/X11/xorg.conf.nvidia-xconfig-original.bak
-
-
-ahora configuramos el tema:
-instalamos dependencias
-    sudo pacman -S --needed qt6-svg qt6-virtualkeyboard qt6-multimedia-ffmpeg qt6-5compat qt6-declarative
-
-clonamos el repositorio:
-    git clone https://github.com/Keyitdev/sddm-astronaut-theme.git
-    cd sddm-astronaut-theme
-    sudo mkdir -p /usr/share/sddm/themes
-    sudo cp -r src/sddm-astronaut-theme /usr/share/sddm/themes/
+para evitar conflictos en GPUs híbridas.
 
 
-ahora le decimos a sddm que tema usar:
-sudo mkdir -p /etc/sddm.conf.d
+2.11. Tema de SDDM (login)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-sudo tee /etc/sddm.conf.d/10-theme.conf >/dev/null <<'EOF'
-[Theme]
-Current=sddm-astronaut-theme
-EOF
+Deja configurado:
 
-copiamos las fuentes:
-sudo cp -r /usr/share/sddm/themes/sddm-astronaut-theme/Fonts/* /usr/share/fonts/
-sudo fc-cache -fv
+    /etc/sddm.conf
 
+con:
+
+    [Theme]
+    Current=sddm-astronaut-theme
+
+    [General]
+    InputMethod=qtvirtualkeyboard
+
+y actualiza de nuevo la caché de fuentes:
+
+    sudo fc-cache -fv
+
+
+
+3. Después de instalar
+----------------------
+
+Al terminar el script verás un mensaje indicando:
+
+- Dotfiles copiados
+- Wallpapers copiados a ~/imagenes/wallpapers
+- Plymouth configurado con tema "unrap"
+- SDDM usando tema "sddm-astronaut-theme"
+- Fuentes e iconos para Waybar
+- pamixer listo para el OSD de volumen
+- Dolphin instalado como explorador de archivos
+
+Solo queda **reiniciar el sistema**:
+
+    reboot
+
+y entrar en tu sesión de Hyprland.
