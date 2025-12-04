@@ -111,7 +111,7 @@ fi
 
 # -----------------------------------------------------------------------------
 # 5. Paquetes principales (pacman)
-#    Incluye: firefox, code, pamixer, dolphin y fuentes para Waybar (Nerd Fonts + Font Awesome + Noto)
+#    Incluye: Hyprland, SDDM, Firefox, VS Code, Dolphin, drivers Intel+NVIDIA, layer-shell-qt5
 # -----------------------------------------------------------------------------
 echo "[+] Instalando paquetes principales con pacman..."
 
@@ -123,6 +123,7 @@ sudo pacman -S --needed --noconfirm \
   intel-media-driver vulkan-intel libva-intel-driver \
   nvidia nvidia-utils nvidia-settings nvidia-prime vulkan-icd-loader \
   lib32-mesa lib32-nvidia-utils lib32-vulkan-intel lib32-vulkan-icd-loader \
+  layer-shell-qt5 \
   noto-fonts noto-fonts-emoji noto-fonts-extra \
   ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols otf-font-awesome
 
@@ -134,7 +135,21 @@ echo "[+] Actualizando caché de fuentes..."
 sudo fc-cache -fv || true
 
 # -----------------------------------------------------------------------------
-# 6. Paquetes AUR (yay) – incluye sddm-astronaut-theme
+# 5.5. Configurar KMS de NVIDIA (nvidia_drm.modeset=1 via modprobe)
+# -----------------------------------------------------------------------------
+echo "[+] Configurando KMS para NVIDIA (nvidia_drm.modeset=1)..."
+
+sudo mkdir -p /etc/modprobe.d
+if [ -f /etc/modprobe.d/nvidia_drm.conf ]; then
+  sudo cp /etc/modprobe.d/nvidia_drm.conf "/etc/modprobe.d/nvidia_drm.conf.bak.$(date +%s)"
+fi
+
+sudo bash -c 'cat >/etc/modprobe.d/nvidia_drm.conf' <<'EOF'
+options nvidia_drm modeset=1
+EOF
+
+# -----------------------------------------------------------------------------
+# 6. Paquetes AUR (yay) – incluye sddm-astronaut-theme y auto-cpufreq
 # -----------------------------------------------------------------------------
 echo "[+] Instalando paquetes AUR con yay..."
 yay -S --needed --noconfirm \
@@ -143,7 +158,21 @@ yay -S --needed --noconfirm \
   sddm-astronaut-theme
 
 echo "[+] Habilitando auto-cpufreq..."
-sudo systemctl enable --now auto-cpufreq.service
+sudo systemctl enable --now auto-cpufreq || sudo systemctl enable --now auto-cpufreq.service
+
+# -----------------------------------------------------------------------------
+# 6.5. Instalar sddm-hyprland (SDDM Wayland sobre Hyprland)
+# -----------------------------------------------------------------------------
+echo "[+] Instalando sddm-hyprland (SDDM sobre Hyprland compositor)..."
+
+SDDM_HYPRLAND_BUILD_DIR="$(mktemp -d)"
+(
+  cd "${SDDM_HYPRLAND_BUILD_DIR}"
+  git clone https://github.com/HyDE-Project/sddm-hyprland.git
+  cd sddm-hyprland
+  sudo make install
+)
+rm -rf "${SDDM_HYPRLAND_BUILD_DIR}" || true
 
 # -----------------------------------------------------------------------------
 # 7. Configurar mkinitcpio para plymouth (HOOKS robusto, sin romper sintaxis)
@@ -205,26 +234,44 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# 8. Configurar entradas de systemd-boot (quiet splash + blacklist NVIDIA)
+# 8. Configurar entradas de systemd-boot (quiet splash + nvidia_drm.modeset=1)
 # -----------------------------------------------------------------------------
-echo "[+] Ajustando /boot/loader/entries (quiet splash + blacklist NVIDIA)..."
+echo "[+] Ajustando /boot/loader/entries (quiet, splash, nvidia_drm.modeset=1)..."
 
 if [ -d /boot/loader/entries ]; then
   for entry in /boot/loader/entries/*.conf; do
     [ -f "$entry" ] || continue
     echo "  [+] Editando ${entry}"
+
+    # Eliminar posibles blacklist antiguos de NVIDIA de ejecuciones previas
+    sudo sed -i 's/modprobe.blacklist=nvidia,nvidia_drm,nvidia_uvm,nvidia_modeset//g' "$entry"
+
+    # Asegurar quiet
     sudo sed -i '/^options /{
-      /modprobe.blacklist=nvidia/! s/$/ quiet splash modprobe.blacklist=nvidia,nvidia_drm,nvidia_uvm,nvidia_modeset/
+      / quiet /! s/$/ quiet/
     }' "$entry"
+
+    # Asegurar splash
+    sudo sed -i '/^options /{
+      / splash /! s/$/ splash/
+    }' "$entry"
+
+    # Asegurar nvidia_drm.modeset=1
+    sudo sed -i '/^options /{
+      /nvidia_drm.modeset=1/! s/$/ nvidia_drm.modeset=1/
+    }' "$entry"
+
+    # Compactar espacios múltiples
+    sudo sed -i 's/  \+/ /g' "$entry"
   done
 else
-  echo "[!] Directorio /boot/loader/entries no encontrado, se omite este paso."
+  echo "[!] Directorio /boot/loader/entries no encontrado, se omite este paso (¿no usas systemd-boot?)."
 fi
 
 # -----------------------------------------------------------------------------
 # 9. Configurar tema de Plymouth y ShowDelay
 # -----------------------------------------------------------------------------
-echo "[+] Aplicando tema Plymouth '\''unrap'\''..."
+echo "[+] Aplicando tema Plymouth 'unrap'..."
 sudo plymouth-set-default-theme -R unrap
 
 echo "[+] Ajustando /etc/plymouth/plymouthd.conf..."
@@ -307,6 +354,9 @@ echo "  Instalación completada."
 echo "  - Dotfiles copiados a ${CONFIG_DIR}"
 echo "  - Wallpapers copiados a ${TARGET_HOME}/imagenes/wallpapers"
 echo "  - Paquetes instalados (Hyprland, SDDM, Firefox, VS Code, Dolphin, etc.)"
+echo "  - NVIDIA con KMS (nvidia_drm.modeset=1) y sin blacklist"
+echo "  - auto-cpufreq instalado y habilitado"
+echo "  - sddm-hyprland instalado (SDDM sobre Hyprland Wayland)"
 echo "  - Plymouth configurado con tema 'unrap'"
 echo "  - SDDM usando tema 'sddm-astronaut-theme'"
 echo "  - Fuentes para Waybar e iconos instaladas (Nerd Fonts + Font Awesome + Noto)"
