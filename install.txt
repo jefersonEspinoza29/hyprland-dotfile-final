@@ -1,10 +1,13 @@
 INSTALACIÓN AUTOMÁTICA – ENTORNO HYPRLAND (JHEFF DOTFILES)
 ==========================================================
 
-Requisitos:
+Requisitos
+----------
+
 - Arch Linux o derivado con pacman.
-- Systemd-boot recomendado (el script ajusta /boot/loader si existe).
+- systemd-boot recomendado (el script ajusta /boot/loader si existe).
 - Conexión a internet.
+- Ejecutar el script como USUARIO normal (NO root).
 
 1. Clonar el repositorio
 ------------------------
@@ -13,7 +16,7 @@ Instala git si aún no lo tienes:
 
     sudo pacman -S git
 
-(OPCIONAL) Instalar Dolphin (explorador de archivos) antes de correr el script:
+(OPCIONAL) Instalar Dolphin antes de correr el script:
 
     sudo pacman -S dolphin
 
@@ -66,7 +69,7 @@ Si ya existen, les hace backup:
 
     ~/.config/<carpeta>.bak.<timestamp>
 
-Luego da permisos de ejecución a los scripts:
+Después da permisos de ejecución a scripts clave:
 
 - ~/.config/eww/scripts/brightness_osd.sh
 - ~/.config/eww/scripts/volume_osd.sh
@@ -81,16 +84,16 @@ Luego da permisos de ejecución a los scripts:
 2.3. Wallpapers
 ~~~~~~~~~~~~~~~
 
-Crea la carpeta:
+Crea:
 
     ~/imagenes/wallpapers
 
-y copia todos los fondos desde el repo, buscando en este orden:
+y copia los fondos desde el repo, buscando en este orden:
 
 - proyecto-hyprland-final/sources/wallpapers
 - proyecto-hyprland-final/wallpapers
 
-Estas imágenes son las que usa el script:
+Estas imágenes son las que usa:
 
     ~/.config/hypr/scripts/wallpaper.sh
 
@@ -102,7 +105,7 @@ que apunta a:
 2.4. Instalación de yay (AUR helper)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Si yay no existe, el script:
+Si `yay` no existe, el script:
 
 - Clona: https://aur.archlinux.org/yay.git
 - Compila e instala con:
@@ -123,10 +126,12 @@ Instala, entre otros:
     - networkmanager, network-manager-applet
 - Navegador y editor:
     - firefox, code
-- Drivers Intel:
-    - mesa, mesa-utils, intel-media-driver, vulkan-intel, libva-intel-driver
-- Drivers NVIDIA:
-    - nvidia, nvidia-utils, nvidia-settings, nvidia-prime, vulkan-icd-loader
+- Drivers Intel + Vulkan:
+    - mesa, mesa-utils
+    - intel-media-driver, vulkan-intel, libva-intel-driver
+- Drivers NVIDIA propietaria + PRIME:
+    - nvidia, nvidia-utils, nvidia-settings, nvidia-prime
+    - vulkan-icd-loader
     - lib32-mesa, lib32-nvidia-utils, lib32-vulkan-intel, lib32-vulkan-icd-loader
 - Fuentes para Waybar e iconos:
     - noto-fonts, noto-fonts-emoji, noto-fonts-extra
@@ -138,7 +143,7 @@ Además:
       sudo systemctl enable --now sddm
 - Habilita NetworkManager:
       sudo systemctl enable --now NetworkManager
-- Actualiza la caché de fuentes:
+- Actualiza caché de fuentes:
       sudo fc-cache -fv
 
 
@@ -147,18 +152,18 @@ Además:
 
 Instala:
 
-- swww           (fondos animados / transiciones)
-- eww            (widgets, barras, OSD)
-- matugen        (temas basados en el wallpaper)
-- rofi           (launcher)
-- waybar         (barra de estado)
-- wlogout        (menú de logout)
-- hyprshot       (capturas de pantalla)
+- swww              (fondos animados / transiciones)
+- eww               (widgets, barras, OSD)
+- matugen           (temas basados en el wallpaper)
+- rofi              (launcher)
+- waybar            (barra de estado)
+- wlogout           (menú de logout)
+- hyprshot          (capturas de pantalla)
 - plymouth-theme-Unrap-git  (tema de Plymouth)
-- auto-cpufreq   (gestión de energía en CPU)
-- sddm-astronaut-theme (tema de login para SDDM)
+- auto-cpufreq      (gestión de energía CPU)
+- sddm-astronaut-theme (tema de login SDDM)
 
-Habilita el servicio de auto-cpufreq:
+Y habilita auto-cpufreq:
 
     sudo systemctl enable --now auto-cpufreq.service
 
@@ -166,11 +171,11 @@ Habilita el servicio de auto-cpufreq:
 2.7. Configuración de Plymouth (pantalla de arranque)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Modifica /etc/mkinitcpio.conf para añadir el hook:
+- Modifica `/etc/mkinitcpio.conf` para añadir el hook:
 
     plymouth
 
-dentro de la línea HOOKS=(), de forma segura sin romper el archivo.
+de forma segura dentro de la línea HOOKS=().
 
 - Regenera los initramfs:
 
@@ -195,16 +200,82 @@ y vuelve a ejecutar:
     sudo mkinitcpio -P
 
 
-2.8. Configuración de systemd-boot
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2.8. NVIDIA híbrida + KMS + ahorro de energía
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Si existe el directorio:
+El script prepara NVIDIA para funcionar bien con Wayland/Hyprland y ahorrar batería:
+
+- Crea `/etc/modprobe.d/nvidia_drm.conf` con:
+
+    options nvidia_drm modeset=1
+
+  Esto activa KMS de NVIDIA (necesario para Wayland).
+
+- (Opcional avanzado que puedes integrar) Crea `/etc/modprobe.d/nvidia-power.conf` con:
+
+    options nvidia NVreg_DynamicPowerManagement=0x02
+
+  Esto habilita el **power management dinámico**: la RTX se suspende cuando no se usa.
+
+- (Opcional) Crea `/etc/modprobe.d/blacklist-nouveau.conf` con:
+
+    blacklist nouveau
+    options nouveau modeset=0
+
+  Para asegurarte de que no cargue el driver libre `nouveau` si quieres usar solo el driver propietario.
+
+- En sistemas con `systemd-boot`, edita cada entrada de `/boot/loader/entries/*.conf` y se asegura de añadir en la línea `options`:
+
+    quiet splash nvidia_drm.modeset=1 nvidia.NVreg_DynamicPowerManagement=0x02 module_blacklist=nouveau
+
+(se añade solo si no estaba; también compacta espacios extra).
+
+Esto deja la Intel como GPU principal para escritorio y la NVIDIA lista para offload.
+
+
+2.9. Configurar PRIME render offload (usar RTX solo para juegos)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Se recomienda crear un script (puede ir en el propio `install.sh`) en:
+
+    /usr/local/bin/nvidia-run
+
+con:
+
+    #!/bin/sh
+    export __NV_PRIME_RENDER_OFFLOAD=1
+    export __GLX_VENDOR_LIBRARY_NAME=nvidia
+    export __VK_LAYER_NV_optimus=NVIDIA_only
+    exec "$@"
+
+y hacerlo ejecutable:
+
+    sudo chmod +x /usr/local/bin/nvidia-run
+
+De esta forma, puedes lanzar programas con la RTX así:
+
+    nvidia-run steam
+    nvidia-run glxgears
+    nvidia-run <juego>
+
+Mientras que el escritorio Hyprland sigue corriendo sobre la GPU Intel para ahorrar batería.
+
+
+2.10. Ajustes de systemd-boot
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Si existe:
 
     /boot/loader/entries
 
-el script edita cada *.conf y agrega al final de la línea "options":
+el script:
 
-    quiet splash modprobe.blacklist=nvidia,nvidia_drm,nvidia_uvm,nvidia_modeset
+- Edita cada `*.conf` y asegura que la línea `options` incluya:
+    - `quiet`
+    - `splash`
+    - `nvidia_drm.modeset=1`
+    - (Opcional) `nvidia.NVreg_DynamicPowerManagement=0x02`
+    - (Opcional) `module_blacklist=nouveau`
 
 Además, en:
 
@@ -214,13 +285,16 @@ ajusta:
 
     timeout 0
 
+para que el menú de arranque no se quede esperando.
 
-2.9. Brillo (control de brillo por terminal)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Compila brillo en un directorio temporal:
+2.11. Brillo (control de brillo por terminal)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Compila `brillo` en un directorio temporal:
 
     git clone https://gitlab.com/cameronnemo/brillo.git
+    cd brillo
     make
     sudo make install
     sudo make install GROUP=video
@@ -228,54 +302,57 @@ Compila brillo en un directorio temporal:
 
 Luego borra el directorio temporal.
 
+Así puedes subir/bajar brillo desde scripts y atajos de Hyprland/eww.
 
-2.10. Limpieza de Xorg y NVIDIA
+
+2.12. Limpieza de Xorg y NVIDIA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Renombra (si existen):
+Para evitar conflictos en GPUs híbridas:
+
+Renombra, si existen:
 
     /etc/X11/xorg.conf
     /etc/X11/xorg.conf.nvidia-xconfig-original
 
-para evitar conflictos en GPUs híbridas.
+a copias de backup, dejando el arranque limpio para Wayland + drivers híbridos.
 
 
-2.11. Tema de SDDM (login)
+2.13. Tema de SDDM (login)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Deja configurado:
-
-    /etc/sddm.conf
-
-con:
+Deja configurado `/etc/sddm.conf` con:
 
     [Theme]
     Current=sddm-astronaut-theme
 
     [General]
     InputMethod=qtvirtualkeyboard
+    DisplayServer=x11
 
-y actualiza de nuevo la caché de fuentes:
+y vuelve a actualizar la caché de fuentes:
 
     sudo fc-cache -fv
-
 
 
 3. Después de instalar
 ----------------------
 
-Al terminar el script verás un mensaje indicando:
+Al finalizar el script verás un resumen indicando:
 
-- Dotfiles copiados
-- Wallpapers copiados a ~/imagenes/wallpapers
-- Plymouth configurado con tema "unrap"
-- SDDM usando tema "sddm-astronaut-theme"
-- Fuentes e iconos para Waybar
-- pamixer listo para el OSD de volumen
-- Dolphin instalado como explorador de archivos
+- Dotfiles copiados a `~/.config`.
+- Wallpapers copiados a `~/imagenes/wallpapers`.
+- NVIDIA configurada para Wayland (KMS) y preparada para PRIME offload.
+- auto-cpufreq habilitado para ahorrar energía en CPU.
+- Plymouth configurado con tema **unrap**.
+- SDDM usando el tema **sddm-astronaut-theme**.
+- Fuentes e iconos para Waybar listos.
+- pamixer instalado para el OSD de volumen de eww.
 
 Solo queda **reiniciar el sistema**:
 
     reboot
 
-y entrar en tu sesión de Hyprland.
+y en el login de SDDM elegir tu sesión de Hyprland. Una vez dentro, podrás usar Intel para el día a día y la RTX solo cuando la invoques con:
+
+    nvidia-run <programa>
