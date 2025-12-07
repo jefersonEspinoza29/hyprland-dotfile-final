@@ -2,7 +2,9 @@
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
-# Instalador de entorno Hyprland + SDDM + dotfiles de Jheff
+# Instalador de entorno Hyprland + SDDM + Drivers Intel/NVIDIA + PRIME offload
+# para Arch Linux con systemd-boot (pensado para tu Acer Predator híbrida)
+#
 # Ejecutar como USUARIO normal (NO root) dentro del repo proyecto-hyprland-final
 # -----------------------------------------------------------------------------
 
@@ -27,7 +29,7 @@ echo "[+] Repo actual:    ${REPO_DIR}"
 echo
 
 # -----------------------------------------------------------------------------
-# 1. Instalar git, base-devel y go-md2man (para yay / AUR)
+# 1. Instalar dependencias base (git, base-devel, go-md2man para yay)
 # -----------------------------------------------------------------------------
 echo "[+] Instalando dependencias base (git, base-devel, go-md2man)..."
 sudo pacman -S --needed --noconfirm git base-devel go-md2man
@@ -111,7 +113,7 @@ fi
 
 # -----------------------------------------------------------------------------
 # 5. Paquetes principales (pacman)
-#    Incluye: Hyprland, SDDM, Firefox, VS Code, Dolphin, drivers Intel+NVIDIA, layer-shell-qt5
+#    Hyprland, SDDM, apps básicas, drivers Intel+NVIDIA, Vulkan, etc.
 # -----------------------------------------------------------------------------
 echo "[+] Instalando paquetes principales con pacman..."
 
@@ -119,13 +121,19 @@ sudo pacman -S --needed --noconfirm \
   sddm hyprland kitty dolphin playerctl jq gsimplecal blueman gnome-calendar plymouth \
   brightnessctl pavucontrol networkmanager network-manager-applet \
   firefox code pamixer \
-  mesa mesa-utils \
-  intel-media-driver vulkan-intel libva-intel-driver \
-  nvidia nvidia-utils nvidia-settings nvidia-prime vulkan-icd-loader \
-  lib32-mesa lib32-nvidia-utils lib32-vulkan-intel lib32-vulkan-icd-loader \
+  # stack gráfico Intel + Mesa
+  mesa lib32-mesa \
+  intel-media-driver vulkan-intel lib32-vulkan-intel libva-intel-driver \
+  # NVIDIA propietaria + PRIME + Vulkan
+  nvidia nvidia-utils lib32-nvidia-utils nvidia-settings nvidia-prime \
+  vulkan-icd-loader lib32-vulkan-icd-loader \
+  # utilidades Wayland/Hypr
   layer-shell-qt5 \
+  # fuentes
   noto-fonts noto-fonts-emoji noto-fonts-extra \
-  ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols otf-font-awesome
+  ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols otf-font-awesome \
+  # utilidades OpenGL
+  mesa-utils
 
 echo "[+] Habilitando SDDM y NetworkManager..."
 sudo systemctl enable --now sddm
@@ -135,21 +143,7 @@ echo "[+] Actualizando caché de fuentes..."
 sudo fc-cache -fv || true
 
 # -----------------------------------------------------------------------------
-# 5.5. Configurar KMS de NVIDIA (nvidia_drm.modeset=1 via modprobe)
-# -----------------------------------------------------------------------------
-echo "[+] Configurando KMS para NVIDIA (nvidia_drm.modeset=1)..."
-
-sudo mkdir -p /etc/modprobe.d
-if [ -f /etc/modprobe.d/nvidia_drm.conf ]; then
-  sudo cp /etc/modprobe.d/nvidia_drm.conf "/etc/modprobe.d/nvidia_drm.conf.bak.$(date +%s)"
-fi
-
-sudo bash -c 'cat >/etc/modprobe.d/nvidia_drm.conf' <<'EOF'
-options nvidia_drm modeset=1
-EOF
-
-# -----------------------------------------------------------------------------
-# 6. Paquetes AUR (yay) – incluye sddm-astronaut-theme y auto-cpufreq
+# 6. Paquetes AUR (yay) – incluye sddm-astronaut-theme, auto-cpufreq, etc.
 # -----------------------------------------------------------------------------
 echo "[+] Instalando paquetes AUR con yay..."
 yay -S --needed --noconfirm \
@@ -161,7 +155,8 @@ echo "[+] Habilitando auto-cpufreq..."
 sudo systemctl enable --now auto-cpufreq || sudo systemctl enable --now auto-cpufreq.service
 
 # -----------------------------------------------------------------------------
-# 6.5. Instalar sddm-hyprland (SDDM Wayland sobre Hyprland)
+# 6.5. Instalar sddm-hyprland (SDDM sobre Hyprland compositor)
+#      (no molesta aunque uses DisplayServer=x11; lo dejamos listo por si acaso)
 # -----------------------------------------------------------------------------
 echo "[+] Instalando sddm-hyprland (SDDM sobre Hyprland compositor)..."
 
@@ -175,9 +170,48 @@ SDDM_HYPRLAND_BUILD_DIR="$(mktemp -d)"
 rm -rf "${SDDM_HYPRLAND_BUILD_DIR}" || true
 
 # -----------------------------------------------------------------------------
-# 7. Configurar mkinitcpio para plymouth (HOOKS robusto, sin romper sintaxis)
+# 7. Configuración de módulos NVIDIA / nouveau (modprobe.d)
+#    - KMS para NVIDIA
+#    - Power management dinámico
+#    - Blacklist de nouveau
 # -----------------------------------------------------------------------------
-echo "[+] Configurando mkinitcpio para plymouth..."
+echo "[+] Configurando módulos NVIDIA y blacklist de nouveau..."
+
+sudo mkdir -p /etc/modprobe.d
+
+# 7.1 nvidia_drm con KMS (para Wayland/Hyprland)
+if [ -f /etc/modprobe.d/nvidia_drm.conf ]; then
+  sudo cp /etc/modprobe.d/nvidia_drm.conf "/etc/modprobe.d/nvidia_drm.conf.bak.$(date +%s)"
+fi
+
+sudo bash -c 'cat >/etc/modprobe.d/nvidia_drm.conf' <<'EOF'
+options nvidia_drm modeset=1
+EOF
+
+# 7.2 Power management dinámico para NVIDIA
+if [ -f /etc/modprobe.d/nvidia-power.conf ]; then
+  sudo cp /etc/modprobe.d/nvidia-power.conf "/etc/modprobe.d/nvidia-power.conf.bak.$(date +%s)"
+fi
+
+sudo bash -c 'cat >/etc/modprobe.d/nvidia-power.conf' <<'EOF'
+options nvidia NVreg_DynamicPowerManagement=0x02
+EOF
+
+# 7.3 Blacklist nouveau (para no pelearse con NVIDIA propietaria)
+if [ -f /etc/modprobe.d/blacklist-nouveau.conf ]; then
+  sudo cp /etc/modprobe.d/blacklist-nouveau.conf "/etc/modprobe.d/blacklist-nouveau.conf.bak.$(date +%s)"
+fi
+
+sudo bash -c 'cat >/etc/modprobe.d/blacklist-nouveau.conf' <<'EOF'
+blacklist nouveau
+options nouveau modeset=0
+EOF
+
+# -----------------------------------------------------------------------------
+# 8. Configurar mkinitcpio para plymouth (HOOKS robusto, sin romper sintaxis)
+#    y regenerar initramfs (incluye también los cambios de NVIDIA)
+# -----------------------------------------------------------------------------
+echo "[+] Configurando mkinitcpio para plymouth + regenerando initramfs..."
 
 if [ -f /etc/mkinitcpio.conf ]; then
   sudo cp /etc/mkinitcpio.conf "/etc/mkinitcpio.conf.bak.$(date +%s)"
@@ -234,9 +268,13 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# 8. Configurar entradas de systemd-boot (quiet splash + nvidia_drm.modeset=1)
+# 9. Configurar entradas de systemd-boot:
+#    - quiet, splash
+#    - nvidia_drm.modeset=1
+#    - nvidia.NVreg_DynamicPowerManagement=0x02
+#    - module_blacklist=nouveau
 # -----------------------------------------------------------------------------
-echo "[+] Ajustando /boot/loader/entries (quiet, splash, nvidia_drm.modeset=1)..."
+echo "[+] Ajustando /boot/loader/entries (quiet, splash, NVIDIA, blacklist nouveau)..."
 
 if [ -d /boot/loader/entries ]; then
   for entry in /boot/loader/entries/*.conf; do
@@ -261,6 +299,16 @@ if [ -d /boot/loader/entries ]; then
       /nvidia_drm.modeset=1/! s/$/ nvidia_drm.modeset=1/
     }' "$entry"
 
+    # Asegurar power management NVIDIA vía kernel (modparam)
+    sudo sed -i '/^options /{
+      /nvidia.NVreg_DynamicPowerManagement=0x02/! s/$/ nvidia.NVreg_DynamicPowerManagement=0x02/
+    }' "$entry"
+
+    # Asegurar blacklist de nouveau desde kernel
+    sudo sed -i '/^options /{
+      /module_blacklist=nouveau/! s/$/ module_blacklist=nouveau/
+    }' "$entry"
+
     # Compactar espacios múltiples
     sudo sed -i 's/  \+/ /g' "$entry"
   done
@@ -269,7 +317,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# 9. Configurar tema de Plymouth y ShowDelay
+# 10. Configurar tema de Plymouth y ShowDelay
 # -----------------------------------------------------------------------------
 echo "[+] Aplicando tema Plymouth 'unrap'..."
 sudo plymouth-set-default-theme -R unrap
@@ -292,7 +340,7 @@ echo "[+] Regenerando initramfs nuevamente por cambios en plymouth..."
 sudo mkinitcpio -P
 
 # -----------------------------------------------------------------------------
-# 10. Ajustar timeout del cargador de arranque (systemd-boot)
+# 11. Ajustar timeout del cargador de arranque (systemd-boot)
 # -----------------------------------------------------------------------------
 echo "[+] Ajustando timeout de systemd-boot..."
 if [ -f /boot/loader/loader.conf ]; then
@@ -307,7 +355,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# 11. Instalar brillo (control de brillo) en directorio temporal
+# 12. Instalar brillo (control de brillo) en directorio temporal
 # -----------------------------------------------------------------------------
 echo "[+] Instalando brillo (control de brillo por terminal)..."
 BRILLO_BUILD_DIR="$(mktemp -d)"
@@ -324,26 +372,47 @@ rm -rf "${BRILLO_BUILD_DIR}" || true
 cd "${REPO_DIR}"
 
 # -----------------------------------------------------------------------------
-# 12. Limpiar configs de Xorg de NVIDIA que rompen híbridas
+# 13. Limpiar configs de Xorg de NVIDIA que rompen híbridas
 # -----------------------------------------------------------------------------
 echo "[+] Limpiando xorg.conf de NVIDIA (si existen)..."
 sudo mv /etc/X11/xorg.conf /etc/X11/xorg.conf.bak 2>/dev/null || true
 sudo mv /etc/X11/xorg.conf.nvidia-xconfig-original /etc/X11/xorg.conf.nvidia-xconfig-original.bak 2>/dev/null || true
 
 # -----------------------------------------------------------------------------
-# 13. Configurar tema SDDM 'sddm-astronaut-theme' (ya instalado por AUR)
+# 14. Configurar SDDM (tema + teclado virtual + DisplayServer=x11)
 # -----------------------------------------------------------------------------
 echo "[+] Configurando SDDM para usar el tema 'sddm-astronaut-theme'..."
+
+if [ -f /etc/sddm.conf ]; then
+  sudo cp /etc/sddm.conf "/etc/sddm.conf.bak.$(date +%s)"
+fi
+
 sudo bash -c 'cat >/etc/sddm.conf' <<'EOF'
 [Theme]
 Current=sddm-astronaut-theme
 
 [General]
 InputMethod=qtvirtualkeyboard
+DisplayServer=x11
 EOF
 
 echo "[+] Refrescando caché de fuentes (tema SDDM)..."
 sudo fc-cache -fv || true
+
+# -----------------------------------------------------------------------------
+# 15. Configurar PRIME Render Offload: script /usr/local/bin/nvidia-run
+# -----------------------------------------------------------------------------
+echo "[+] Creando script nvidia-run para PRIME render offload..."
+
+sudo bash -c 'cat >/usr/local/bin/nvidia-run' <<'EOF'
+#!/bin/sh
+export __NV_PRIME_RENDER_OFFLOAD=1
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+export __VK_LAYER_NV_optimus=NVIDIA_only
+exec "$@"
+EOF
+
+sudo chmod +x /usr/local/bin/nvidia-run
 
 # -----------------------------------------------------------------------------
 # FIN
@@ -353,13 +422,13 @@ echo "==============================================================="
 echo "  Instalación completada."
 echo "  - Dotfiles copiados a ${CONFIG_DIR}"
 echo "  - Wallpapers copiados a ${TARGET_HOME}/imagenes/wallpapers"
-echo "  - Paquetes instalados (Hyprland, SDDM, Firefox, VS Code, Dolphin, etc.)"
-echo "  - NVIDIA con KMS (nvidia_drm.modeset=1) y sin blacklist"
-echo "  - auto-cpufreq instalado y habilitado"
-echo "  - sddm-hyprland instalado (SDDM sobre Hyprland Wayland)"
-echo "  - Plymouth configurado con tema 'unrap'"
-echo "  - SDDM usando tema 'sddm-astronaut-theme'"
-echo "  - Fuentes para Waybar e iconos instaladas (Nerd Fonts + Font Awesome + Noto)"
-echo "  - pamixer instalado para el control de volumen con OSD de Eww"
+echo "  - Hyprland, SDDM, Firefox, VS Code, Dolphin instalados"
+echo "  - Intel (mesa, vulkan-intel) + NVIDIA (nvidia, nvidia-utils, PRIME) configurados"
+echo "  - nouveau en blacklist (modprobe + kernel)"
+echo "  - KMS de NVIDIA (nvidia_drm.modeset=1) + DynamicPowerManagement=0x02"
+echo "  - auto-cpufreq instalado y habilitado (CPU en powersave)"
+echo "  - PRIME render offload listo con:  nvidia-run <comando>"
+echo "  - sddm-hyprland instalado, SDDM con tema astronaut y DisplayServer=x11"
+echo "  - Plymouth con tema 'unrap' y boot silencioso (quiet splash)"
 echo "==============================================================="
 echo "Reinicia el sistema para aplicar todos los cambios."
