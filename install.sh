@@ -23,6 +23,37 @@ TARGET_HOME="$(eval echo "~${TARGET_USER}")"
 CONFIG_DIR="${TARGET_HOME}/.config"
 REPO_DIR="$(pwd)"
 
+
+
+# -----------------------------------------------------------------------------
+# 0. Pedir contraseña sudo una sola vez y mantenerla viva durante el script
+# -----------------------------------------------------------------------------
+echo "[+] Comprobando privilegios sudo (se pedirá tu contraseña una sola vez)..."
+sudo -v
+
+# Mantener sudo vivo mientras el script corre
+# (hace sudo -n true cada 60s hasta que el script termine)
+keep_sudo_alive() {
+  while true; do
+    sudo -n true 2>/dev/null || exit 0
+    sleep 60
+  done
+}
+
+keep_sudo_alive &
+SUDO_KEEPALIVE_PID=$!
+
+# Cuando el script termine (bien o mal), matamos el keep-alive
+cleanup_sudo() {
+  kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+}
+trap cleanup_sudo EXIT
+
+
+
+
+
+
 echo "[+] Usuario destino: ${TARGET_USER}"
 echo "[+] Home destino:   ${TARGET_HOME}"
 echo "[+] Repo actual:    ${REPO_DIR}"
@@ -117,23 +148,7 @@ fi
 # -----------------------------------------------------------------------------
 echo "[+] Instalando paquetes principales con pacman..."
 
-sudo pacman -S --needed --noconfirm \
-  sddm hyprland kitty dolphin playerctl jq gsimplecal blueman gnome-calendar plymouth \
-  brightnessctl pavucontrol networkmanager network-manager-applet \
-  firefox code pamixer \
-  # stack gráfico Intel + Mesa
-  mesa lib32-mesa \
-  intel-media-driver vulkan-intel lib32-vulkan-intel libva-intel-driver \
-  # NVIDIA propietaria + PRIME + Vulkan
-  nvidia nvidia-utils lib32-nvidia-utils nvidia-settings nvidia-prime \
-  vulkan-icd-loader lib32-vulkan-icd-loader \
-  # utilidades Wayland/Hypr
-  layer-shell-qt5 \
-  # fuentes
-  noto-fonts noto-fonts-emoji noto-fonts-extra \
-  ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols otf-font-awesome \
-  # utilidades OpenGL
-  mesa-utils
+sudo pacman -S --needed --noconfirm sddm hyprland kitty dolphin playerctl jq gsimplecal blueman gnome-calendar plymouth brightnessctl pavucontrol networkmanager network-manager-applet firefox code pamixer mesa lib32-mesa intel-media-driver vulkan-intel lib32-vulkan-intel libva-intel-driver nvidia nvidia-utils lib32-nvidia-utils nvidia-settings nvidia-prime vulkan-icd-loader lib32-vulkan-icd-loader noto-fonts noto-fonts-emoji noto-fonts-extra ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols otf-font-awesome mesa-utils
 
 echo "[+] Habilitando SDDM y NetworkManager..."
 sudo systemctl enable --now sddm
@@ -146,10 +161,7 @@ sudo fc-cache -fv || true
 # 6. Paquetes AUR (yay) – incluye sddm-astronaut-theme, auto-cpufreq, etc.
 # -----------------------------------------------------------------------------
 echo "[+] Instalando paquetes AUR con yay..."
-yay -S --needed --noconfirm \
-  swww eww matugen rofi waybar wlogout hyprshot \
-  plymouth-theme-Unrap-git auto-cpufreq \
-  sddm-astronaut-theme
+yay -S --needed --noconfirm swww eww matugen rofi waybar wlogout hyprshot plymouth-theme-Unrap-git auto-cpufreq sddm-astronaut-theme layer-shell-qt5
 
 echo "[+] Habilitando auto-cpufreq..."
 sudo systemctl enable --now auto-cpufreq || sudo systemctl enable --now auto-cpufreq.service
