@@ -1,358 +1,192 @@
-INSTALACIÓN AUTOMÁTICA – ENTORNO HYPRLAND (JHEFF DOTFILES)
-==========================================================
+agregando la configuracion de todo el dotfile:
 
-Requisitos
-----------
+primero inciamos con actualizar el sistema
 
-- Arch Linux o derivado con pacman.
-- systemd-boot recomendado (el script ajusta /boot/loader si existe).
-- Conexión a internet.
-- Ejecutar el script como USUARIO normal (NO root).
+sudo pacman -Syyu
 
-1. Clonar el repositorio
-------------------------
+ahora isntalamos yay y aceptamos todos los permisos:
 
-Instala git si aún no lo tienes:
+sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
 
-    sudo pacman -S git
+luego instlamos los nesesario primero:
 
-(OPCIONAL) Instalar Dolphin antes de correr el script:
+sudo pacman -S hyprland
+sudo pacman -S sddm
+sudo pacman -S kitty
+sudo pacman -S playerctl jq
+sudo pacman -S gnome-calendar
+sudo pacman -S blueman
+sudo pacman -S plymouth
+sudo pacman -S go-md2man
+sudo pacman -S dolphin
+sudo pacman -S gsimplecal
+sudo pacman -S networkmanager
+sudo pacman -S brightnessctl
+sudo pacman -S pavucontrol
+sudo pacman -S network-manager-applet
+sudo pacman -S firefox
+sudo pacman -S code
+sudo pacman -S noto-fonts noto-fonts-emoji noto-fonts-extra ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols otf-font-awesome
 
-    sudo pacman -S dolphin
 
-Clona el repo e ingresa a la carpeta:
+ahora instalamos los drivers de intel:
 
-    git clone https://github.com/jefersonEspinoza29/proyecto-hyprland-final
-    cd proyecto-hyprland-final
+sudo pacman -S mesa lib32-mesa
+sudo pacman -S vulkan-intel lib32-vulkan-intel vulkan-icd-loader lib32-vulkan-icd-loader
+sudo pacman -S intel-media-driver libva-utils
+sudo pacman -S mesa-demos vulkan-tools
+sudo pacman -S intel-gpu-tools
 
-Da permisos de ejecución al instalador:
+quitamos si es nesesario xf86-video-intel:
 
-    chmod +x install.sh
+sudo pacman -Rns xf86-video-intel
 
-Ejecuta el script **como usuario normal** (NO root):
+ahora vamos con nvidia:
 
-    ./install.sh
+sudo pacman -Syu
+sudo pacman -S nvidia nvidia-utils lib32-nvidia-utils nvidia-settings nvidia-prime
 
+Desactivamos nouveau (para que no choque con nvidia)
 
-2. ¿Qué hace el script?
------------------------
+Creamos el archivo:
 
-2.1. Dependencias base
-~~~~~~~~~~~~~~~~~~~~~~
+sudo nano /etc/modprobe.d/blacklist-nouveau.conf
+Con este contenido:
 
-Instala:
+blacklist nouveau
+options nouveau modeset=0
 
-- git
-- base-devel
-- go-md2man
+luego Añadimos parametros al kernel (systemd-boot) en mi caso
 
-Necesarios para compilar paquetes AUR (yay, brillo, etc.).
+Con systemd-boot, los parametros se ponen en los archivos de /boot/loader/entries/.
 
+ls /boot/loader/entries
 
-2.2. Copia de dotfiles a ~/.config
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Veras algo como arch.conf o arch-linux.conf o algo similar.
 
-Copia estas carpetas desde el repo a:
+Busca la línea que empieza con options.
+Ahí estarán cosas como root=... rw quiet splash etc.
 
-    /home/<usuario>/.config
+Añade al final de esa línea estos parametros:
 
-- eww
-- gsimplecal
-- hypr
-- kitty
-- matugen
-- rofi
-- waybar
-- wlogout
+rd.blacklist=nouveau modprobe.blacklist=nouveau nvidia_drm.modeset=1
 
-Si ya existen, les hace backup:
+ahora vamos a cargar los módulos de NVIDIA (e Intel) muy temprano
 
-    ~/.config/<carpeta>.bak.<timestamp>
+vamos a editar /etc/mkinitcpio.conf:
 
-Después da permisos de ejecución a scripts clave:
+sudo nano /etc/mkinitcpio.conf
 
-- ~/.config/eww/scripts/brightness_osd.sh
-- ~/.config/eww/scripts/volume_osd.sh
-- ~/.config/hypr/scripts/wallpaper.sh
-- ~/.config/waybar/scripts/bluetooth-toggle.sh
-- ~/.config/waybar/scripts/bluetooth-tray-toggle.sh
-- ~/.config/waybar/scripts/gnome-calendar-toggle.sh
-- ~/.config/waybar/scripts/nm-applet-toggle.sh
-- ~/.config/waybar/scripts/playerctl.sh
 
+Busca la línea MODULES=() y pon algo asi:
 
-2.3. Wallpapers
-~~~~~~~~~~~~~~~
+MODULES=(nvidia_drm)
 
-Crea:
 
-    ~/imagenes/wallpapers
+ahora vamos con el hook plymouth en mkinitcpio.conf
 
-y copia los fondos desde el repo, buscando en este orden:
+sudo nano /etc/mkinitcpio.conf
 
-- proyecto-hyprland-final/sources/wallpapers
-- proyecto-hyprland-final/wallpapers
+Busca la línea HOOKS= y vamos a poner plymouth despues de base udev masomenos asi:
 
-Estas imágenes son las que usa:
+HOOKS=(base udev plymouth ...)
 
-    ~/.config/hypr/scripts/wallpaper.sh
+agregamos un thea de plymouth:
+yay -S plymouth-theme-unrap-git
 
-que apunta a:
+ahora cargamos el unrap como thema:
 
-    $HOME/imagenes/wallpapers
+sudo plymouth-set-default-theme -R unrap
 
+Editar la entrada normal de systemd-boot
 
-2.4. Instalación de yay (AUR helper)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sudo nano /boot/loader/entries/"nombre de tu archivo"
 
-Si `yay` no existe, el script:
+Cambios clave:
 
-- Clona: https://aur.archlinux.org/yay.git
-- Compila e instala con:
+En la línea de options añadimos " quiet splash " al final.
 
-    makepkg -si --noconfirm
+Cambiamos loader.conf un poco mejor
 
+vamos a hacer que el timepo de systemboot sea de 0
+sudo nano /boot/loader/loader.conf
+Y modificamos solamente el:
 
-2.5. Paquetes principales (pacman)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+timeout 0
 
-Instala, entre otros:
 
-- Sesión / entorno:
-    - sddm, hyprland, kitty, dolphin, gsimplecal, blueman, gnome-calendar, plymouth
-- Audio y volumen:
-    - playerctl, jq, brightnessctl, pavucontrol, pamixer
-- Red:
-    - networkmanager, network-manager-applet
-- Navegador y editor:
-    - firefox, code
-- Drivers Intel + Vulkan:
-    - mesa, mesa-utils
-    - intel-media-driver, vulkan-intel, libva-intel-driver
-- Drivers NVIDIA propietaria + PRIME:
-    - nvidia, nvidia-utils, nvidia-settings, nvidia-prime
-    - vulkan-icd-loader
-    - lib32-mesa, lib32-nvidia-utils, lib32-vulkan-intel, lib32-vulkan-icd-loader
-- Fuentes para Waybar e iconos:
-    - noto-fonts, noto-fonts-emoji, noto-fonts-extra
-    - ttf-jetbrains-mono-nerd, ttf-nerd-fonts-symbols, otf-font-awesome
+Guarda y luego:
 
-Además:
+sudo mkinitcpio -P
 
-- Habilita SDDM:
-      sudo systemctl enable --now sddm
-- Habilita NetworkManager:
-      sudo systemctl enable --now NetworkManager
-- Actualiza caché de fuentes:
-      sudo fc-cache -fv
 
+Copiar dotfiles a ~/.config (con backup si ya existen)
+te paso un LS -la:
+[jheff@predator hyprland-dotfile-final]$ ls -la
+total 92
 
-2.6. Paquetes AUR (yay)
-~~~~~~~~~~~~~~~~~~~~~~~
+drwxr-xr-x  3 jheff jheff  4096 dic 14 09:30 eww
 
-Instala:
+drwxr-xr-x  2 jheff jheff  4096 dic 14 09:30 gsimplecal
+drwxr-xr-x  4 jheff jheff  4096 dic 14 09:30 hypr
+drwxr-xr-x  2 jheff jheff  4096 dic 14 09:30 kitty
+drwxr-xr-x  3 jheff jheff  4096 dic 14 09:30 matugen
+drwxr-xr-x  2 jheff jheff  4096 dic 14 09:30 rofi
+drwxr-xr-x  3 jheff jheff  4096 dic 14 09:30 sources
+drwxr-xr-x  3 jheff jheff  4096 dic 14 09:30 waybar
+drwxr-xr-x  2 jheff jheff  4096 dic 14 09:30 wlogout
+[jheff@predator hyprland-dotfile-final]$ 
 
-- swww              (fondos animados / transiciones)
-- eww               (widgets, barras, OSD)
-- matugen           (temas basados en el wallpaper)
-- rofi              (launcher)
-- waybar            (barra de estado)
-- wlogout           (menú de logout)
-- hyprshot          (capturas de pantalla)
-- plymouth-theme-Unrap-git  (tema de Plymouth)
-- auto-cpufreq      (gestión de energía CPU)
-- sddm-astronaut-theme (tema de login SDDM)
+y todas la carpetas lo pasaremos a .config de cada sistema que se encuenta en home
 
-Y habilita auto-cpufreq:
+ahora vamos a darle permisos a ciertos archivos que estan dentro de ,config:
 
-    sudo systemctl enable --now auto-cpufreq.service
+Permisos de ejecución en scripts de eww / hypr / waybar
 
+chmod +x "${CONFIG_DIR}/eww/scripts/brightness_osd.sh"            2>/dev/null || true
+chmod +x "${CONFIG_DIR}/eww/scripts/volume_osd.sh"                2>/dev/null || true
+chmod +x "${CONFIG_DIR}/hypr/scripts/wallpaper.sh"                2>/dev/null || true
+chmod +x "${CONFIG_DIR}/waybar/scripts/bluetooth-toggle.sh"       2>/dev/null || true
+chmod +x "${CONFIG_DIR}/waybar/scripts/bluetooth-tray-toggle.sh"  2>/dev/null || true
+chmod +x "${CONFIG_DIR}/waybar/scripts/gnome-calendar-toggle.sh"  2>/dev/null || true
+chmod +x "${CONFIG_DIR}/waybar/scripts/nm-applet-toggle.sh"       2>/dev/null || true
+chmod +x "${CONFIG_DIR}/waybar/scripts/playerctl.sh"              2>/dev/null || true
 
-2.7. Configuración de Plymouth (pantalla de arranque)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+luego vamos a copiar el contenido de sources que dentro tiene una carpeta wallpaper:
+Wallpapers: crear carpeta ~/imagenes/wallpapers y copiar desde el repo
+/sources/wallpapers
 
-- Modifica `/etc/mkinitcpio.conf` para añadir el hook:
+luego agregamos instalaciones de yay:
 
-    plymouth
+yay -S matugen 
+yay -S rofi
+yay -S waybar
+yay -S wlogout
+yay -S eww
+yay -S hyprshot
+yay -S swww
 
-de forma segura dentro de la línea HOOKS=().
+yay -S auto-cpufreq
+Habilitando auto-cpufreq..."
+sudo systemctl enable --now auto-cpufreq || sudo systemctl enable --now auto-cpufreq.service
 
-- Regenera los initramfs:
 
-    sudo mkinitcpio -P
+Instalar brillo (control de brillo) en directorio temporal
 
-- Aplica el tema:
+echo "[+] Instalando brillo (control de brillo por terminal)..."
+BRILLO_BUILD_DIR="$(mktemp -d)"
+(
+  cd "${BRILLO_BUILD_DIR}"
+  git clone https://gitlab.com/cameronnemo/brillo.git
+  cd brillo
+  make
+  sudo make install
+  sudo make install GROUP=video || true
+  sudo make install.setgid GROUP=video || true
+)
+rm -rf "${BRILLO_BUILD_DIR}" || true
+cd "${REPO_DIR}"
 
-    sudo plymouth-set-default-theme -R unrap
 
-- Crea / ajusta:
 
-    /etc/plymouth/plymouthd.conf
-
-con:
-
-    [Daemon]
-    Theme=unrap
-    ShowDelay=0
-
-y vuelve a ejecutar:
-
-    sudo mkinitcpio -P
-
-
-2.8. NVIDIA híbrida + KMS + ahorro de energía
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-El script prepara NVIDIA para funcionar bien con Wayland/Hyprland y ahorrar batería:
-
-- Crea `/etc/modprobe.d/nvidia_drm.conf` con:
-
-    options nvidia_drm modeset=1
-
-  Esto activa KMS de NVIDIA (necesario para Wayland).
-
-- (Opcional avanzado que puedes integrar) Crea `/etc/modprobe.d/nvidia-power.conf` con:
-
-    options nvidia NVreg_DynamicPowerManagement=0x02
-
-  Esto habilita el **power management dinámico**: la RTX se suspende cuando no se usa.
-
-- (Opcional) Crea `/etc/modprobe.d/blacklist-nouveau.conf` con:
-
-    blacklist nouveau
-    options nouveau modeset=0
-
-  Para asegurarte de que no cargue el driver libre `nouveau` si quieres usar solo el driver propietario.
-
-- En sistemas con `systemd-boot`, edita cada entrada de `/boot/loader/entries/*.conf` y se asegura de añadir en la línea `options`:
-
-    quiet splash nvidia_drm.modeset=1 nvidia.NVreg_DynamicPowerManagement=0x02 module_blacklist=nouveau
-
-(se añade solo si no estaba; también compacta espacios extra).
-
-Esto deja la Intel como GPU principal para escritorio y la NVIDIA lista para offload.
-
-
-2.9. Configurar PRIME render offload (usar RTX solo para juegos)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Se recomienda crear un script (puede ir en el propio `install.sh`) en:
-
-    /usr/local/bin/nvidia-run
-
-con:
-
-    #!/bin/sh
-    export __NV_PRIME_RENDER_OFFLOAD=1
-    export __GLX_VENDOR_LIBRARY_NAME=nvidia
-    export __VK_LAYER_NV_optimus=NVIDIA_only
-    exec "$@"
-
-y hacerlo ejecutable:
-
-    sudo chmod +x /usr/local/bin/nvidia-run
-
-De esta forma, puedes lanzar programas con la RTX así:
-
-    nvidia-run steam
-    nvidia-run glxgears
-    nvidia-run <juego>
-
-Mientras que el escritorio Hyprland sigue corriendo sobre la GPU Intel para ahorrar batería.
-
-
-2.10. Ajustes de systemd-boot
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Si existe:
-
-    /boot/loader/entries
-
-el script:
-
-- Edita cada `*.conf` y asegura que la línea `options` incluya:
-    - `quiet`
-    - `splash`
-    - `nvidia_drm.modeset=1`
-    - (Opcional) `nvidia.NVreg_DynamicPowerManagement=0x02`
-    - (Opcional) `module_blacklist=nouveau`
-
-Además, en:
-
-    /boot/loader/loader.conf
-
-ajusta:
-
-    timeout 0
-
-para que el menú de arranque no se quede esperando.
-
-
-2.11. Brillo (control de brillo por terminal)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Compila `brillo` en un directorio temporal:
-
-    git clone https://gitlab.com/cameronnemo/brillo.git
-    cd brillo
-    make
-    sudo make install
-    sudo make install GROUP=video
-    sudo make install.setgid GROUP=video
-
-Luego borra el directorio temporal.
-
-Así puedes subir/bajar brillo desde scripts y atajos de Hyprland/eww.
-
-
-2.12. Limpieza de Xorg y NVIDIA
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Para evitar conflictos en GPUs híbridas:
-
-Renombra, si existen:
-
-    /etc/X11/xorg.conf
-    /etc/X11/xorg.conf.nvidia-xconfig-original
-
-a copias de backup, dejando el arranque limpio para Wayland + drivers híbridos.
-
-
-2.13. Tema de SDDM (login)
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Deja configurado `/etc/sddm.conf` con:
-
-    [Theme]
-    Current=sddm-astronaut-theme
-
-    [General]
-    InputMethod=qtvirtualkeyboard
-    DisplayServer=x11
-
-y vuelve a actualizar la caché de fuentes:
-
-    sudo fc-cache -fv
-
-
-3. Después de instalar
-----------------------
-
-Al finalizar el script verás un resumen indicando:
-
-- Dotfiles copiados a `~/.config`.
-- Wallpapers copiados a `~/imagenes/wallpapers`.
-- NVIDIA configurada para Wayland (KMS) y preparada para PRIME offload.
-- auto-cpufreq habilitado para ahorrar energía en CPU.
-- Plymouth configurado con tema **unrap**.
-- SDDM usando el tema **sddm-astronaut-theme**.
-- Fuentes e iconos para Waybar listos.
-- pamixer instalado para el OSD de volumen de eww.
-
-Solo queda **reiniciar el sistema**:
-
-    reboot
-
-y en el login de SDDM elegir tu sesión de Hyprland. Una vez dentro, podrás usar Intel para el día a día y la RTX solo cuando la invoques con:
-
-    nvidia-run <programa>
+   
